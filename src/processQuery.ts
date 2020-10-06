@@ -11,6 +11,16 @@ function modelAlreadyDeclared(modelName: string) {
 const Schema = mongoose.Schema;
 const GenericSchema = new Schema();
 
+function handleResponse(returnedData: any, resolve: any, reject: any) {
+  if (returnedData) {
+    return resolve({ success: true, data: JSON.stringify(returnedData) });
+  } else {
+    return reject({
+      success: false,
+      data: JSON.stringify("Data does not exist"),
+    });
+  }
+}
 module.exports = async function performQuery(query: any) {
   const CollectionModel = modelAlreadyDeclared(query.collection)
     ? mongoose.model(query.collection)
@@ -20,32 +30,15 @@ module.exports = async function performQuery(query: any) {
     const { operation, payload } = query;
     switch (operation) {
       case "create":
+        console.log("*** 🔥 payload", payload.data);
         CollectionModel.collection
-          .insert([new CollectionModel(payload.data)])
-          .then((data: any) => {
-            if (data) {
-              resolve({ success: true, data: JSON.stringify(data) });
-            } else {
-              reject({
-                success: false,
-                data: JSON.stringify("no such user exist"),
-              });
-            }
-          });
+          .insertOne(payload.data)
+          .then((data: any) => handleResponse(data, resolve, reject));
         break;
       case "update":
         if (payload.hasOwnProperty("where") && payload.hasOwnProperty("data")) {
           CollectionModel.update(payload.where, { $set: payload.data })
-            .then((data: any) => {
-              if (data) {
-                resolve({ success: true, data: JSON.stringify(data) });
-              } else {
-                reject({
-                  success: false,
-                  data: JSON.stringify("no such user exist"),
-                });
-              }
-            })
+            .then((data: any) => handleResponse(data, resolve, reject))
             .catch((err: any) => {
               reject({ success: false, data: JSON.stringify(err) });
             });
@@ -53,48 +46,22 @@ module.exports = async function performQuery(query: any) {
         break;
       case "findOne":
         if (payload.hasOwnProperty("where")) {
-          CollectionModel.findOne(payload.where).then((docs: any) => {
-            if (docs) {
-              resolve({ success: true, data: JSON.stringify(docs) });
-            } else {
-              reject({
-                success: false,
-                data: JSON.stringify("no such user exist"),
-              });
-            }
-          });
+          CollectionModel.findOne(payload.where).then((data: any) =>
+            handleResponse(data, resolve, reject)
+          );
         }
         break;
       case "findMany":
         if (payload.hasOwnProperty("where")) {
-          CollectionModel.find(payload.where).then((docs: any) => {
-            if (docs) {
-              resolve({ success: true, data: JSON.stringify(docs) });
-            } else {
-              reject({
-                success: false,
-                data: JSON.stringify("no such user exist"),
-              });
-            }
-          });
+          CollectionModel.find(payload.where).then((data: any) =>
+            handleResponse(data, resolve, reject)
+          );
         }
         break;
       case "delete":
         if (payload.hasOwnProperty("where")) {
           CollectionModel.findOneAndRemove(payload.where)
-            .then((docs: any) => {
-              if (docs) {
-                resolve({
-                  success: true,
-                  data: JSON.stringify(`${docs.deletedCount} Records deleted`),
-                });
-              } else {
-                reject({
-                  success: false,
-                  data: JSON.stringify("no such user exist"),
-                });
-              }
-            })
+            .then((data: any) => handleResponse(data, resolve, reject))
             .catch((err: any) => {
               reject(err);
             });
@@ -103,19 +70,7 @@ module.exports = async function performQuery(query: any) {
       case "deleteMany":
         if (payload.hasOwnProperty("where")) {
           CollectionModel.remove(payload.where)
-            .then((docs: any) => {
-              if (docs) {
-                resolve({
-                  success: true,
-                  data: JSON.stringify(`${docs.deletedCount} Records deleted`),
-                });
-              } else {
-                reject({
-                  success: false,
-                  data: JSON.stringify("no such user exist"),
-                });
-              }
-            })
+            .then((data: any) => handleResponse(data, resolve, reject))
             .catch((err: any) => {
               reject(err);
             });
@@ -124,12 +79,7 @@ module.exports = async function performQuery(query: any) {
       case "count":
         if (payload.hasOwnProperty("where")) {
           CollectionModel.countDocuments(payload.where)
-            .then((docs: any) => {
-              resolve({
-                success: true,
-                data: JSON.stringify(docs),
-              });
-            })
+            .then((data: any) => handleResponse(data, resolve, reject))
             .catch((err: any) => {
               reject(err);
             });
