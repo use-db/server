@@ -24,11 +24,24 @@ db.once("open", function () {
 app.get("/", (req: any, res: any) => {
   return res.send("Received a GET HTTP method");
 });
-
+app.post("/get-collections", jsonParser, async (req: any, res: any) => {
+  try {
+    return res.json({
+      success: true,
+      data: JSON.stringify(
+        await mongoose.connection.db.listCollections().toArray()
+      ),
+    });
+  } catch (err) {
+    return res.json({
+      success: false,
+      data: JSON.stringify(`Error in getting collections ${err}`),
+    });
+  }
+});
 app.post("/query", jsonParser, async (req: any, res: any) => {
   try {
-    let data = await performQuery(req.body);
-    return res.json(data);
+    return res.json(await performQuery(req.body));
   } catch (err) {
     return res.json({
       success: false,

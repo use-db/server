@@ -30,7 +30,6 @@ module.exports = async function performQuery(query: any) {
     const { operation, payload } = query;
     switch (operation) {
       case "create":
-        console.log("*** 🔥 payload", payload.data);
         CollectionModel.collection
           .insertOne(payload.data)
           .then((data: any) => handleResponse(data, resolve, reject));
